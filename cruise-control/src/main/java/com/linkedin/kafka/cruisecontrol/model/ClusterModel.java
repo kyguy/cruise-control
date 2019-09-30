@@ -8,11 +8,14 @@ import com.linkedin.cruisecontrol.monitor.sampling.aggregator.AggregatedMetricVa
 import com.linkedin.kafka.cruisecontrol.common.Resource;
 import com.linkedin.kafka.cruisecontrol.analyzer.BalancingConstraint;
 import com.linkedin.kafka.cruisecontrol.analyzer.AnalyzerUtils;
-
 import com.linkedin.kafka.cruisecontrol.config.BrokerCapacityInfo;
 import com.linkedin.kafka.cruisecontrol.config.KafkaCruiseControlConfig;
 import com.linkedin.kafka.cruisecontrol.monitor.ModelGeneration;
 import com.linkedin.kafka.cruisecontrol.servlet.response.stats.BrokerStats;
+import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.api.model.PodSpec;
+import io.fabric8.kubernetes.client.DefaultKubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClient;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
@@ -30,7 +33,6 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
 import org.apache.commons.math3.stat.descriptive.moment.Variance;
 import org.apache.kafka.common.Cluster;
 import org.apache.kafka.common.Node;
@@ -38,7 +40,6 @@ import org.apache.kafka.common.PartitionInfo;
 import org.apache.kafka.common.TopicPartition;
 
 import static com.linkedin.kafka.cruisecontrol.monitor.MonitorUtils.UNIT_INTERVAL_TO_PERCENTAGE;
-
 
 /**
  * A class that holds the information of the cluster, including topology, liveness and load for racks, brokers and
@@ -71,6 +72,9 @@ public class ClusterModel implements Serializable {
   private int _unknownHostId;
   private Map<Integer, String> _capacityEstimationInfoByBrokerId;
 
+  private KubernetesClient _kubernetesClient;
+  private String _namespace;
+
   /**
    * Constructor for the cluster class. It creates data structures to hold a list of racks, a map for partitions by
    * topic partition, topic replica collocation by topic.
@@ -102,6 +106,42 @@ public class ClusterModel implements Serializable {
     _monitoredPartitionsRatio = monitoredPartitionsRatio;
     _unknownHostId = 0;
     _capacityEstimationInfoByBrokerId = new HashMap<>();
+
+    _kubernetesClient = new DefaultKubernetesClient();
+    _namespace = _kubernetesClient.getNamespace();
+  }
+
+  /**
+   * If running in a Kubernetes environment, returns the name of the node which the broker
+   * pod is running on. Otherwise, returns the hostname detected by Kafka
+   *
+   * @param hostname Hostname of broker detected by Kafka
+   * @return Name of the node hosting the broker.
+   */
+  public String getNodeNameOfBroker(String hostname) {
+    String podNodeName = null;
+    String podHostname = null;
+    String podSubdomain = null;
+
+    String fullPodHostname = null;
+
+    List<Pod> pl = _kubernetesClient.pods().inNamespace(_namespace).list().getItems();
+    for (Pod pod : pl) {
+
+      PodSpec podSpec = pod.getSpec();
+      podHostname = podSpec.getHostname();
+      podSubdomain = podSpec.getSubdomain();
+
+      if (podHostname != null && podSubdomain != null && _namespace != null) {
+        fullPodHostname = String.join(".", podHostname, podSubdomain, _namespace, "svc.cluster.local");
+        if (fullPodHostname.equals(hostname)) {
+          podNodeName = pod.getSpec().getNodeName();
+        }
+      }
+    }
+    if (podNodeName == null) return hostname;
+
+    return podNodeName;
   }
 
   /**
@@ -913,6 +953,9 @@ public class ClusterModel implements Serializable {
     if (brokerCapacityInfo.isEstimated()) {
       _capacityEstimationInfoByBrokerId.put(brokerId, brokerCapacityInfo.estimationInfo());
     }
+
+    // if running in Kubernetes env, get nodeName of the broker.
+    host = getNodeNameOfBroker(host);
     Broker broker = rack.createBroker(brokerId, host, brokerCapacityInfo, populateReplicaPlacementInfo);
     _aliveBrokers.add(broker);
     _brokers.add(broker);
