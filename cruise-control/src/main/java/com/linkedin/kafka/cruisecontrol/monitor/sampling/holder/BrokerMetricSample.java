@@ -20,7 +20,7 @@ import static com.linkedin.kafka.cruisecontrol.monitor.metricdefinition.KafkaMet
  */
 public class BrokerMetricSample extends MetricSample<String, BrokerEntity> {
   public static final byte MIN_SUPPORTED_VERSION = 4;
-  public static final byte LATEST_SUPPORTED_VERSION = 5;
+  public static final byte LATEST_SUPPORTED_VERSION = 6;
   private final byte _deserializationVersion;
 
   /**
@@ -119,11 +119,12 @@ public class BrokerMetricSample extends MetricSample<String, BrokerEntity> {
    * 8 bytes - broker follower fetch local time ms (999TH percentile)
    * 8 bytes - broker log flush time ms (50TH percentile)
    * 8 bytes - broker log flush time ms (999TH percentile)
+   * 8 bytes - broker cpu capacity.
    * @return The serialized bytes.
    */
   public byte[] toBytes() {
     byte[] hostBytes = (entity().group() != null ? entity().group() : "UNKNOWN").getBytes(StandardCharsets.UTF_8);
-    ByteBuffer buffer = ByteBuffer.allocate(457 + hostBytes.length);
+    ByteBuffer buffer = ByteBuffer.allocate(465 + hostBytes.length);
     buffer.put(_deserializationVersion);
     buffer.putInt(entity().brokerId());
     buffer.putShort((short) hostBytes.length);
@@ -185,6 +186,7 @@ public class BrokerMetricSample extends MetricSample<String, BrokerEntity> {
     buffer.putDouble(metricValue(BROKER_FOLLOWER_FETCH_LOCAL_TIME_MS_999TH));
     buffer.putDouble(metricValue(BROKER_LOG_FLUSH_TIME_MS_50TH));
     buffer.putDouble(metricValue(BROKER_LOG_FLUSH_TIME_MS_999TH));
+    buffer.putDouble(metricValue(CPU_CAPACITY));
     return buffer.array();
   }
 
@@ -203,6 +205,8 @@ public class BrokerMetricSample extends MetricSample<String, BrokerEntity> {
         return readV4(buffer);
       case 5:
         return readV5(buffer);
+      case 6:
+        return readV6(buffer);
       default:
         throw new UnknownVersionException("Unsupported deserialization version: " + version + " (Latest: "
                                           + LATEST_SUPPORTED_VERSION + ", Minimum: " + MIN_SUPPORTED_VERSION + ")");
@@ -350,6 +354,39 @@ public class BrokerMetricSample extends MetricSample<String, BrokerEntity> {
     BrokerMetricSample brokerMetricSample = new BrokerMetricSample(host, brokerId, (byte) 5);
 
     long sampleTime = populateV5BrokerMetricSample(buffer, brokerMetricSample);
+
+    if (sampleTime >= 0) {
+      brokerMetricSample.close(sampleTime);
+    }
+    return brokerMetricSample;
+  }
+
+  /**
+   * Populate the given broker metric sample with v4 buffer deserialization and return the sample time.
+   *
+   * @param buffer Buffer to deserialize.
+   * @param brokerMetricSample Broker metric sample to populate.
+   * @return Sample time.
+   */
+  private static long populateV6BrokerMetricSample(ByteBuffer buffer, BrokerMetricSample brokerMetricSample) {
+    // No new metrics have been added from v5 -> v6.
+    MetricDef metricDef = KafkaMetricDef.brokerMetricDef();
+    long sampleTime = populateV5BrokerMetricSample(buffer, brokerMetricSample);
+
+    brokerMetricSample.record(metricDef.metricInfo(CPU_CAPACITY.name()), buffer.getDouble());
+
+    return sampleTime;
+  }
+
+  private static BrokerMetricSample readV6(ByteBuffer buffer) throws UnknownVersionException {
+    int brokerId = buffer.getInt();
+    int hostLength = buffer.getShort();
+    byte[] hostBytes = new byte[hostLength];
+    buffer.get(hostBytes);
+    String host = new String(hostBytes, StandardCharsets.UTF_8);
+    BrokerMetricSample brokerMetricSample = new BrokerMetricSample(host, brokerId, (byte) 6);
+
+    long sampleTime = populateV6BrokerMetricSample(buffer, brokerMetricSample);
 
     if (sampleTime >= 0) {
       brokerMetricSample.close(sampleTime);

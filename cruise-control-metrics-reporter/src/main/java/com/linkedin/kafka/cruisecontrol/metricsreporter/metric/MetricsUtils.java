@@ -416,6 +416,19 @@ public final class MetricsUtils {
   }
 
   /**
+   * Get the "recent CPU capacity" for operating environment of JVM process.
+   *
+   * @param nowMs The current time in milliseconds.
+   * @param brokerId Broker Id.
+   * @param kubernetesMode If {@code true}, gets CPU capacity value with respect to the operating environment.
+   * @return the "recent CPU capacity" for the JVM process as an int.
+   */
+  public static BrokerMetric getCpuCapacityMetric(long nowMs, int brokerId, boolean kubernetesMode) throws IOException {
+    int cpuCapacity = Runtime.getRuntime().availableProcessors();
+    return new BrokerMetric(RawMetricType.BROKER_CPU_CAPACITY, nowMs, brokerId, cpuCapacity);
+  }
+
+  /**
    * Check whether the kafkaMetric is an interested metric.
    *
    * @param metricName Kafka metric name.

@@ -31,7 +31,7 @@ public class BrokerMetricSampleTest {
     }
     sample.close((long) value);
     byte[] bytes = sample.toBytes();
-    assertEquals(461, bytes.length);
+    assertEquals(469, bytes.length);
     BrokerMetricSample deserializedSample = BrokerMetricSample.fromBytes(bytes);
 
     assertEquals("host", deserializedSample.entity().host());
@@ -64,7 +64,7 @@ public class BrokerMetricSampleTest {
     }
     sample.close((long) value);
     byte[] bytes = sample.toBytes();
-    assertEquals(461, bytes.length);
+    assertEquals(469, bytes.length);
     BrokerMetricSample deserializedSample = BrokerMetricSample.fromBytes(bytes);
 
     assertEquals("host", deserializedSample.entity().host());

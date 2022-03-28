@@ -365,6 +365,7 @@ public class CruiseControlMetricsReporter implements MetricsReporter, Runnable {
             reportYammerMetrics(now);
             reportKafkaMetrics(now);
             reportCpuUtils(now);
+            reportCpuCapacity(now);
           }
           try {
             _producer.flush();
@@ -450,6 +451,16 @@ public class CruiseControlMetricsReporter implements MetricsReporter, Runnable {
       LOG.debug("Finished reporting CPU util.");
     } catch (IOException e) {
       LOG.warn("Failed reporting CPU util.", e);
+    }
+  }
+
+  private void reportCpuCapacity(long now) {
+    LOG.debug("Reporting CPU util.");
+    try {
+      sendCruiseControlMetric(MetricsUtils.getCpuCapacityMetric(now, _brokerId, _kubernetesMode));
+      LOG.debug("Finished reporting CPU capacity.");
+    } catch (IOException e) {
+      LOG.warn("Failed reporting CPU capacity.", e);
     }
   }
 

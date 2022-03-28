@@ -61,6 +61,8 @@ public class CruiseControlMetricsProcessorTest {
   private static final double DELTA = 0.001;
   private static final double B0_CPU = 50.0;
   private static final double B1_CPU = 30.0;
+  private static final int B0_CPU_CAPACITY = 1;
+  private static final int B1_CPU_CAPACITY = 2;
   private static final double B0_ALL_TOPIC_BYTES_IN = 820.0;
   private static final double B1_ALL_TOPIC_BYTES_IN = 500.0;
   private static final double B0_ALL_TOPIC_BYTES_OUT = 1380.0;
@@ -370,6 +372,10 @@ public class CruiseControlMetricsProcessorTest {
         case BROKER_CPU_UTIL:
           metrics.add(new BrokerMetric(RawMetricType.BROKER_CPU_UTIL, _time.milliseconds(), BROKER_ID_0, B0_CPU));
           metrics.add(new BrokerMetric(RawMetricType.BROKER_CPU_UTIL, _time.milliseconds(), BROKER_ID_1, B1_CPU));
+          break;
+        case BROKER_CPU_CAPACITY:
+          metrics.add(new BrokerMetric(RawMetricType.BROKER_CPU_CAPACITY, _time.milliseconds(), BROKER_ID_0, B0_CPU_CAPACITY));
+          metrics.add(new BrokerMetric(RawMetricType.BROKER_CPU_CAPACITY, _time.milliseconds(), BROKER_ID_1, B1_CPU_CAPACITY));
           break;
         default:
           metrics.add(new BrokerMetric(rawMetricType, _time.milliseconds(), BROKER_ID_0, i++ * BYTES_IN_MB));

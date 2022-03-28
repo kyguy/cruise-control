@@ -115,6 +115,7 @@ public class CruiseControlMetricsReporterTest extends CCKafkaClientsIntegrationT
                                                                        (int) TOPIC_BYTES_OUT.id(),
                                                                        (int) PARTITION_SIZE.id(),
                                                                        (int) BROKER_CPU_UTIL.id(),
+                                                                       (int) BROKER_CPU_CAPACITY.id(),
                                                                        (int) ALL_TOPIC_REPLICATION_BYTES_IN.id(),
                                                                        (int) ALL_TOPIC_REPLICATION_BYTES_OUT.id(),
                                                                        (int) ALL_TOPIC_PRODUCE_REQUEST_RATE.id(),
