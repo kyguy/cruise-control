@@ -241,9 +241,6 @@ public class CCEmbeddedBrokerBuilder {
     if (_logDirectory == null) {
       throw new IllegalArgumentException("log directory must be specified");
     }
-    if (_zkConnect == null) {
-      throw new IllegalArgumentException("zkConnect must be specified");
-    }
   }
 
   /**
