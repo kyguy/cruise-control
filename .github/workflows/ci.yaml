@@ -31,7 +31,9 @@ jobs:
       # see: https://github.com/gradle/actions/blob/main/setup-gradle/README.md
       - uses: gradle/actions/setup-gradle@v4 # v4.0.0
       - name: gradle build
-        run: ./gradlew --no-daemon -PmaxParallelForks=1 build
+        env:
+          TESTCONTAINERS_LOGLEVEL: DEBUG
+        run: ./gradlew --no-daemon -PmaxParallelForks=1 build --info
 
   integration-test:
     name: "integration-test with JDK=${{matrix.java-dist}}:${{matrix.java-ver}}"
@@ -53,7 +55,9 @@ jobs:
       # see: https://github.com/gradle/actions/blob/main/setup-gradle/README.md
       - uses: gradle/actions/setup-gradle@v4 # v4.0.0
       - name: gradle integration test
-        run: ./gradlew --no-daemon -PmaxParallelForks=1 clean integrationTest
+        env:
+          TESTCONTAINERS_LOGLEVEL: DEBUG
+        run: ./gradlew --no-daemon -PmaxParallelForks=1 clean integrationTest --info
 
   build-platform:
     name: platform build with JDK=${{matrix.java-dist}}:${{matrix.java-ver}} on ${{matrix.hw_platform}}

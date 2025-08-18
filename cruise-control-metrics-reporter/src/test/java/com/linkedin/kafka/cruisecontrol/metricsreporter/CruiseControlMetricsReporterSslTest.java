@@ -12,6 +12,7 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.junit.Assert;
+import javax.net.ssl.KeyManagerFactory;
 
 import static com.linkedin.kafka.cruisecontrol.metricsreporter.CruiseControlMetricsReporterConfig.CRUISE_CONTROL_METRICS_REPORTER_INTERVAL_MS_CONFIG;
 import static com.linkedin.kafka.cruisecontrol.metricsreporter.CruiseControlMetricsReporterConfig.CRUISE_CONTROL_METRICS_TOPIC_CONFIG;
@@ -51,7 +52,9 @@ public class CruiseControlMetricsReporterSslTest extends CruiseControlMetricsRep
     props.setProperty("log.flush.interval.messages", "1");
     props.setProperty("offsets.topic.replication.factor", "1");
     props.setProperty("default.replication.factor", "2");
-    props.setProperty(SslConfigs.SSL_KEYMANAGER_ALGORITHM_CONFIG, "SunX509");
+
+    // The Kafka brokers should use the same keymanager algorithm as the host that generates the certs
+    props.setProperty(SslConfigs.SSL_KEYMANAGER_ALGORITHM_CONFIG, KeyManagerFactory.getDefaultAlgorithm());
 
     return props;
   }

@@ -15,6 +15,7 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.kafka.KafkaContainer;
 import org.testcontainers.lifecycle.Startable;
 import org.testcontainers.utility.DockerImageName;
+import org.testcontainers.utility.MountableFile;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -83,9 +84,10 @@ public class CCEmbeddedKraftCluster implements Startable {
             .withListener("0.0.0.0:" + MAPPED_CONTAINER_PORT, () -> "localhost:" + externalPort)
             .withEnv("CLUSTER_ID", clusterId)
             // Uncomment the following line when debugging Kafka cluster problems.
-            //.withLogConsumer(outputFrame -> System.out.print(networkAlias + " | " + outputFrame.getUtf8String()))
+            .withLogConsumer(outputFrame -> System.out.print(networkAlias + " | " + outputFrame.getUtf8String()))
             // Uncomment the following line when debugging SSL connection problems.
-            //.withEnv("KAFKA_OPTS", "-Djavax.net.debug=ssl,handshake")
+            .withEnv("KAFKA_OPTS", "-Djavax.net.debug=ssl,handshake")
+            .withEnv("KAFKA_OPTS", "-Dorg.testcontainers.dump.container.logs=true")
             .withStartupTimeout(Duration.ofMinutes(1));
           kafkaContainer.setPortBindings(List.of(externalPort + ":" + MAPPED_CONTAINER_PORT));
 
@@ -99,22 +101,22 @@ public class CCEmbeddedKraftCluster implements Startable {
 
           setBrokerConfigViaEnvVars(kafkaContainer, brokerConfig);
 
-          // Mount metrics reporter and generated certs into container
-          mount(kafkaContainer, brokerConfig);
+          // Mount metrics reporter and copy generated certs into container
+          setupContainerResources(kafkaContainer, brokerConfig);
 
           return kafkaContainer;
         })
         .collect(Collectors.toList());
   }
 
-  private void mountCertIfConfigExists(KafkaContainer container, Map<Object, Object> config, String key) {
+  private void copyCertToContainer(KafkaContainer container, Map<Object, Object> config, String key) {
     if (config.containsKey(key)) {
       String path = config.get(key).toString();
-      container.withFileSystemBind(path, path, BindMode.READ_ONLY);
+      container.withCopyToContainer(MountableFile.forHostPath(path, 0644), path);
     }
   }
 
-  private void mount(KafkaContainer kafkaContainer, Map<Object, Object> brokerConfig) {
+  private void setupContainerResources(KafkaContainer kafkaContainer, Map<Object, Object> brokerConfig) {
     Path libsDir = Paths.get("build", "libs").toAbsolutePath().normalize();
 
     try {
@@ -130,9 +132,9 @@ public class CCEmbeddedKraftCluster implements Startable {
         BindMode.READ_ONLY
       );
 
-      mountCertIfConfigExists(kafkaContainer, brokerConfig, "ssl.truststore.location");
-      mountCertIfConfigExists(kafkaContainer, brokerConfig, "ssl.keystore.location");
-      mountCertIfConfigExists(kafkaContainer, brokerConfig, "cruise.control.metrics.reporter.ssl.keystore.location");
+      copyCertToContainer(kafkaContainer, brokerConfig, "ssl.truststore.location");
+      copyCertToContainer(kafkaContainer, brokerConfig, "ssl.keystore.location");
+      copyCertToContainer(kafkaContainer, brokerConfig, "cruise.control.metrics.reporter.ssl.keystore.location");
     } catch (IOException e) {
       throw new RuntimeException("Failed to mount Kafka container resources", e);
     }
@@ -181,12 +183,11 @@ public class CCEmbeddedKraftCluster implements Startable {
   }
 
   /**
-   * Returns a comma-separated list of bootstrap server addresses that are reachable from inside
-   * the Docker network used by the TestContainers Kafka cluster.
+   * Returns a comma-separated list of bootstrap server addresses using plain text protocol.
    *
-   * @return A comma-separated list of external bootstrap server addresses in the form {@code host:port}.
+   * @return A comma-separated list of bootstrap server addresses using plain text protocol in the form {@code host:port}.
    */
-  public String getInternalBootstrapAddress() {
+  public String getPlainBootstrapAddress() {
     return _brokers.stream().map(KafkaContainer::getBootstrapServers).collect(Collectors.joining(","));
   }
 
@@ -207,7 +208,7 @@ public class CCEmbeddedKraftCluster implements Startable {
     _brokers.parallelStream().forEach(GenericContainer::start);
 
     Properties props = new Properties();
-    props.setProperty(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, getInternalBootstrapAddress());
+    props.setProperty(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, getPlainBootstrapAddress());
     AdminClient adminClient = AdminClient.create(props);
 
     IntStream.range(0, _brokersNum).parallel().forEach(
