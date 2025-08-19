@@ -91,7 +91,10 @@ public abstract class CCKafkaIntegrationTestHarness extends CCAbstractZookeeperT
 
   protected Map<Object, Object> createBrokerConfig(int brokerId) {
     CCEmbeddedBrokerBuilder builder = new CCEmbeddedBrokerBuilder();
-    builder.zkConnect(zookeeper());
+    CCEmbeddedZookeeper zookeeper = zookeeper();
+    if (zookeeper != null) {
+      builder.zkConnect(zookeeper);
+    }
     builder.nodeId(brokerId);
     builder.enable(securityProtocol());
     if (securityProtocol() == SecurityProtocol.SSL) {
