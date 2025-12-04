@@ -869,8 +869,13 @@ public class ExecutorTest extends CCKafkaClientsIntegrationTestHarness {
                   topic.partitions().get(tp.partition()).replicas().stream().anyMatch(rep -> r.brokerId().equals(rep.id())));
         }
       }
+
+      // Wait for leader movement
+      TopicDescription topicAfterLeaderMove = _cluster.waitForTopicMetadata(tp.topic(), Duration.ofSeconds(60),
+          topicDescription -> topicDescription.partitions().get(tp.partition()).leader().id()
+            == proposal.newLeader().brokerId());
       assertEquals("The leader should have moved for " + tp,
-                   proposal.newLeader().brokerId().intValue(), topic.partitions().get(tp.partition()).leader().id());
+                   proposal.newLeader().brokerId().intValue(), topicAfterLeaderMove.partitions().get(tp.partition()).leader().id());
 
     }
     if (isTriggeredByUserRequest) {
