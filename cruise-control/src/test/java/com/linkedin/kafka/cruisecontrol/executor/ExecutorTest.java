@@ -871,12 +871,15 @@ public class ExecutorTest extends CCKafkaClientsIntegrationTestHarness {
       }
 
       // Wait for leader movement
-      TopicDescription topicAfterLeaderMove = _cluster.waitForTopicMetadata(tp.topic(), Duration.ofSeconds(60),
-          topicDescription -> topicDescription.partitions().get(tp.partition()).leader().id()
-            == proposal.newLeader().brokerId());
-      assertEquals("The leader should have moved for " + tp,
-                   proposal.newLeader().brokerId().intValue(), topicAfterLeaderMove.partitions().get(tp.partition()).leader().id());
-
+      //TopicDescription topicAfterLeaderMove = _cluster.waitForTopicMetadata(tp.topic(), Duration.ofSeconds(60),
+      //    topicDescription -> topicDescription.partitions().get(tp.partition()).leader().id()
+      //      == proposal.newLeader().brokerId());
+      assertEquals("The leader should have moved for " + tp
+          + " proposal.newReplicas: " + proposal.newReplicas()
+          + " proposal.old.replicas " + proposal.oldReplicas()
+          + " topic.leader " + topic.partitions().get(tp.partition()).leader().id(),
+        proposal.newLeader().brokerId(),
+        Integer.valueOf(topic.partitions().get(tp.partition()).leader().id()));
     }
     if (isTriggeredByUserRequest) {
       EasyMock.verify(mockUserTaskInfo, mockUserTaskManager, mockExecutorNotifier, mockLoadMonitor, mockAnomalyDetectorManager);
