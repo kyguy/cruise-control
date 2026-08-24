@@ -10,7 +10,7 @@ the open source community subject to the Apache 2.0 license.
 File Headers
 =============
 
-New files should include the following header:
+New files and files that are edited should include the following header:
 
 ```
 /*
@@ -28,7 +28,8 @@ New files should include the following header:
  */
 ```
 
-Existing files with the original LinkedIn/BSD header should retain that header. (See [Charter, Section 7.a](CHARTER.md)
+Existing files that contain the original LinkedIn/BSD header should retain that header (See [Charter, Section 7.a](CHARTER.md).)
+For those files, the Apache header should be added below the existing LinkedIn/BSD header.
 
 Responsible Disclosure of Security Vulnerabilities
 ==================================================
