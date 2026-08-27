@@ -59,7 +59,7 @@ Development Conventions
 
 ### Minor Changes
 
-Bug fixes, enhancements, tests, documentation, and other non-interface related code changes require a [standard vote](GOVERNANCE.md#voting-process).
+Bug fixes, enhancements, tests, documentation, and other routine code changes are submitted as pull requests and require a [standard vote](GOVERNANCE.md#voting-process) to merge.
 
 ### Major Changes
 
