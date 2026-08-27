@@ -67,7 +67,7 @@ Governance changes, or decisions where consensus cannot be reached, require a ma
 **Standard Vote**: Requires at least **2 maintainer approvals**.
 If the author of the change is a maintainer, that counts as one approval.
 
-**Consensus Vote**: Decided by lazy consensus: if no maintainer raises a -1 within the voting period, the proposal is accepted.
+**Consensus Vote**: Requires active approval within the voting period.
 
   - Must remain open for at least **3 days** (72 hours)
   - Requires at least **3 binding +1 votes** and **zero binding -1 votes**
