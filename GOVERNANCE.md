@@ -25,7 +25,7 @@ All TSC members are Maintainers and voting members.
   - **Jiangjie (Becket) Qin** - @becketqin
   - **Viktor Somogyi-Vass** - @viktorsomogyi
   - **Omkhar Arasaratnam** - @omkhar
-  - **Kondrat Bertalan** - @k0b3rIT
+  - **Bertalan Kondrat** - @k0b3rIT
   - **Paolo Patierno** - @ppatierno
   - **Mickael Maison** - @mimaison
   - **Kyle Liberti** - @kyguy
