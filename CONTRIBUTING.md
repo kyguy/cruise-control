@@ -31,6 +31,21 @@ New files and files that are edited should include the following header:
 Existing files that contain the original LinkedIn/BSD header should retain that header (See [Charter, Section 7.a](CHARTER.md).)
 For those files, the Apache header should be added below the existing LinkedIn/BSD header.
 
+Developer Certificate of Origin
+================================
+
+The project requires all commits to be signed off, indicating that you certify your contribution with the [Developer Certificate of Origin (DCO)](https://developercertificate.org/).
+This is required by the project [Charter](CHARTER.md) (Section 7.b.ii).
+
+To sign off on your commits, use the `-s` flag with `git commit`:
+
+```
+git commit -s -m "Your commit message"
+```
+
+This adds a `Signed-off-by` line to your commit message with your name and email address.
+Make sure the name and email match your Git configuration (`user.name` and `user.email`).
+
 Responsible Disclosure of Security Vulnerabilities
 ==================================================
 
