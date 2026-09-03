@@ -11,8 +11,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.DescribeClusterResult;
+import org.apache.kafka.clients.admin.ListTopicsOptions;
 import org.apache.kafka.clients.admin.TopicDescription;
 import org.apache.kafka.common.Cluster;
 import org.apache.kafka.common.Node;
@@ -30,6 +32,7 @@ public class MetadataAdminClient {
   private static final Logger LOG = LoggerFactory.getLogger(MetadataAdminClient.class);
 
   private final Admin _adminClient;
+  private volatile Cluster _cachedCluster;
 
   /**
    * Creates a new MetadataAdminClient.
@@ -42,18 +45,20 @@ public class MetadataAdminClient {
 
   /**
    * Fetches the current metadata for the Kafka cluster.
+   * Falls back to cached metadata if the refresh fails.
    *
    * @return a {@link Cluster} containing the cluster ID, broker nodes, and partition information for all topics
    */
   public Cluster cluster() {
     try {
-      Set<String> topicNames = _adminClient.listTopics().names().get();
+      Set<String> topicNames = _adminClient.listTopics(new ListTopicsOptions().listInternal(true)).names().get();
 
       Map<String, TopicDescription> topicDescriptions = _adminClient.describeTopics(topicNames).allTopicNames().get();
 
       DescribeClusterResult describeResult = _adminClient.describeCluster();
       Collection<Node> nodes = describeResult.nodes().get();
       String clusterId = describeResult.clusterId().get();
+      Set<Integer> liveNodeIds = nodes.stream().map(Node::id).collect(Collectors.toSet());
 
       List<PartitionInfo> partitionInfos = new ArrayList<>();
 
@@ -61,22 +66,34 @@ public class MetadataAdminClient {
         for (TopicPartitionInfo partInfo : desc.partitions()) {
 
           Node leader = partInfo.leader();
-          Node[] replicas = partInfo.replicas().toArray(Node[]::new);
+          List<Node> replicaList = partInfo.replicas();
+
+          Node[] replicas = replicaList.toArray(Node[]::new);
           Node[] isr = partInfo.isr().toArray(Node[]::new);
 
-          partitionInfos.add(new PartitionInfo(desc.name(), partInfo.partition(), leader, replicas, isr));
+          // TopicPartitionInfo doesn't expose offline replicas so we derive them from live broker set.
+          Node[] offlineReplicas = replicaList.stream()
+              .filter(r -> !liveNodeIds.contains(r.id()))
+              .toArray(Node[]::new);
+
+          partitionInfos.add(new PartitionInfo(desc.name(), partInfo.partition(), leader, replicas, isr, offlineReplicas));
         }
       }
 
-      return new Cluster(clusterId, nodes, partitionInfos, Collections.emptySet(), Collections.emptySet());
+      _cachedCluster = new Cluster(clusterId, nodes, partitionInfos, Collections.emptySet(), Collections.emptySet());
+      return _cachedCluster;
     } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
-        LOG.error("Interrupted while fetching cluster metadata", e);
-        throw new RuntimeException("Interrupted while fetching cluster metadata", e);
-
+        if (_cachedCluster == null) {
+          throw new RuntimeException("Failed to refresh cluster metadata and no cached metadata available", e);
+        }
+        LOG.warn("Interrupted while fetching cluster metadata, using cached cluster metadata", e);
     } catch (ExecutionException e) {
-        LOG.error("ExecutionException while fetching cluster metadata", e);
-        throw new RuntimeException("Failed to fetch cluster metadata", e);
+        if (_cachedCluster == null) {
+          throw new RuntimeException("Failed to refresh cluster metadata and no cached metadata available", e);
+        }
+        LOG.warn("ExecutionException while fetching cluster metadata, using cached cluster metadata", e);
     }
+    return _cachedCluster;
   }
 }
