@@ -37,7 +37,7 @@ import org.apache.kafka.metadata.properties.MetaPropertiesVersion;
 import org.apache.kafka.raft.QuorumConfig;
 import org.apache.kafka.server.ProcessRole;
 import org.apache.kafka.server.ServerSocketFactory;
-import org.apache.kafka.server.config.KRaftConfigs;
+import org.apache.kafka.raft.KRaftConfigs;
 import org.apache.kafka.server.config.ServerLogConfigs;
 import org.apache.kafka.server.config.ServerTopicConfigSynonyms;
 import org.apache.kafka.server.metrics.KafkaYammerMetrics;
@@ -241,7 +241,8 @@ public class CCKafkaRaftServer implements Server {
             properties.setProperty(VERSION_CONFIG, MetaPropertiesVersion.V1.numberString());
             properties.setProperty(CLUSTER_ID_CONFIG, _clusterId);
             properties.setProperty(KRaftConfigs.NODE_ID_CONFIG, config.get(KRaftConfigs.NODE_ID_CONFIG).toString());
-            properties.setProperty(ServerLogConfigs.LOG_DIR_CONFIG, config.getString(ServerLogConfigs.LOG_DIR_CONFIG));
+            // Kafka 4.3 changed log.dir(s) to a LIST config; join it back to the comma-separated form meta.properties expects.
+            properties.setProperty(ServerLogConfigs.LOG_DIR_CONFIG, String.join(",", config.getList(ServerLogConfigs.LOG_DIR_CONFIG)));
             properties.setProperty(METADATA_LOG_DIR_CONFIG, config.getString(METADATA_LOG_DIR_CONFIG));
 
             try (FileOutputStream out = new FileOutputStream(metaPropsFile)) {
@@ -254,10 +255,8 @@ public class CCKafkaRaftServer implements Server {
 
     private Set<File> readLogDirs(KafkaConfig config) {
         Set<File> logDirs = new HashSet<>();
-        String logDirString = config.getString(ServerLogConfigs.LOG_DIR_CONFIG);
-        String[] paths = logDirString.split(",");
-        for (String path : paths) {
-            logDirs.add(new File(path));
+        for (String path : config.getList(ServerLogConfigs.LOG_DIR_CONFIG)) {
+            logDirs.add(new File(path.trim()));
         }
         return logDirs;
     }
