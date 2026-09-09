@@ -339,7 +339,7 @@ project(':cruise-control') {
     testImplementation 'com.jayway.jsonpath:json-path:2.7.0'
     testImplementation 'org.powermock:powermock-module-junit4:2.0.9'
     testImplementation 'org.powermock:powermock-api-easymock:2.0.9'
-    testImplementation "org.testcontainers:testcontainers-kafka:$testcontainersVersion"
+    testImplementation "org.testcontainers:kafka:$testcontainersVersion"
   }
 
   publishing {
