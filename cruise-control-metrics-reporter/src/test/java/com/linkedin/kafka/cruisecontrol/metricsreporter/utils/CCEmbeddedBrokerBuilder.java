@@ -269,6 +269,9 @@ public class CCEmbeddedBrokerBuilder {
     props.put(KRaftConfigs.PROCESS_ROLES_CONFIG, "broker");
     props.put(KRaftConfigs.NODE_ID_CONFIG, Integer.toString(_nodeId));
     props.put(QuorumConfig.QUORUM_VOTERS_CONFIG, _kraftConnect);
+    if (_kraftConnect != null) {
+      props.put(QuorumConfig.QUORUM_BOOTSTRAP_SERVERS_CONFIG, extractBootstrapServers(_kraftConnect));
+    }
     props.put(CLUSTER_ID_CONFIG, _clusterId);
     props.put(KRaftConfigs.CONTROLLER_LISTENER_NAMES_CONFIG, "CONTROLLER");
     props.put(SocketServerConfigs.LISTENER_SECURITY_PROTOCOL_MAP_CONFIG, "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,SSL:SSL");
@@ -297,6 +300,10 @@ public class CCEmbeddedBrokerBuilder {
     }
 
     return props;
+  }
+
+  private static String extractBootstrapServers(String quorumVoters) {
+    return quorumVoters.replaceAll("\\d+@", "");
   }
 
   public CCEmbeddedBroker build() {

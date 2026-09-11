@@ -56,6 +56,7 @@ public class MiniKdc {
     // Use a dynamic KDC port to avoid test port collisions and TIME_WAIT "Connection reset" errors. init() saves
     // this assigned port to krb5.conf.
     _kerbyServer.setKdcTcpPort(CCKafkaTestUtils.findLocalPort());
+    System.setProperty("sun.security.krb5.timeout", "60000");
     _kerbyServer.init();
     _kerbyServer.start();
 

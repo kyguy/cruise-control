@@ -21,6 +21,7 @@ public class CCEmbeddedKRaftController implements AutoCloseable {
     private static final int ID = 100;
 
     // Instead of using config constants from internal Kafka classes, we declare them here to reduce dependency on them
+    private static final String QUORUM_BOOTSTRAP_SERVERS_CONFIG = "controller.quorum.bootstrap.servers";
     private static final String PROCESS_ROLES_CONFIG = "process.roles";
     private static final String NODE_ID_CONFIG = "node.id";
     private static final String CONTROLLER_LISTENER_NAMES_CONFIG = "controller.listener.names";
@@ -98,6 +99,7 @@ public class CCEmbeddedKRaftController implements AutoCloseable {
         props.setProperty(CONTROLLER_LISTENER_NAMES_CONFIG, "CONTROLLER");
         props.setProperty(LISTENERS_CONFIG, "CONTROLLER://:" + _port);
         props.setProperty(QUORUM_VOTERS_CONFIG, quorumVoters());
+        props.setProperty(QUORUM_BOOTSTRAP_SERVERS_CONFIG, HOST + ":" + _port);
         props.setProperty(LOG_DIR_CONFIG, _logDir.getAbsolutePath());
         props.setProperty(KafkaServerConfigs.METADATA_LOG_DIR_CONFIG, _logDir.getAbsolutePath());
         return props;

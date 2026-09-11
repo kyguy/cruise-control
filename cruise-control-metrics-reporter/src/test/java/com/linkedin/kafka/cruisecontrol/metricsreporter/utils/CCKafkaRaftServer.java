@@ -47,7 +47,6 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Map;
@@ -105,7 +104,7 @@ public class CCKafkaRaftServer implements Server {
                 time,
                 _metrics,
                 CompletableFuture.completedFuture(QuorumConfig.parseVoterConnections(config.quorumConfig().voters())),
-                new ArrayList<>(),
+                QuorumConfig.parseBootstrapServers(config.quorumConfig().bootstrapServers()),
                 new StandardFaultHandlerFactory(),
                 new ServerSocketFactory.KafkaServerSocketFactory()
         );
