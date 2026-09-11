@@ -4,7 +4,6 @@
 
 package com.linkedin.kafka.cruisecontrol.metricsreporter.utils;
 
-import kafka.log.UnifiedLog;
 import kafka.metrics.KafkaMetricsReporter;
 import kafka.server.BrokerServer;
 import kafka.server.ControllerServer;
@@ -17,6 +16,7 @@ import kafka.server.StandardFaultHandlerFactory;
 import kafka.utils.Mx4jLoader;
 import kafka.utils.VerifiableProperties;
 import org.apache.kafka.common.KafkaException;
+import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigResource.Type;
 import org.apache.kafka.common.internals.Topic;
@@ -37,18 +37,16 @@ import org.apache.kafka.metadata.properties.MetaPropertiesVersion;
 import org.apache.kafka.raft.QuorumConfig;
 import org.apache.kafka.server.ProcessRole;
 import org.apache.kafka.server.ServerSocketFactory;
-import org.apache.kafka.server.config.KRaftConfigs;
+import org.apache.kafka.raft.KRaftConfigs;
 import org.apache.kafka.server.config.ServerLogConfigs;
 import org.apache.kafka.server.config.ServerTopicConfigSynonyms;
 import org.apache.kafka.server.metrics.KafkaYammerMetrics;
 import org.apache.kafka.storage.internals.log.LogConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import scala.jdk.javaapi.CollectionConverters;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Map;
@@ -60,6 +58,8 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+
+import static com.linkedin.kafka.cruisecontrol.metricsreporter.utils.KafkaServerConfigs.METADATA_LOG_DIR_CONFIG;
 
 /**
  * This class implements the KRaft (Kafka Raft) mode server which relies on a KRaft quorum for maintaining cluster
@@ -104,7 +104,7 @@ public class CCKafkaRaftServer implements Server {
                 time,
                 _metrics,
                 CompletableFuture.completedFuture(QuorumConfig.parseVoterConnections(config.quorumConfig().voters())),
-                new ArrayList<>(),
+                QuorumConfig.parseBootstrapServers(config.quorumConfig().bootstrapServers()),
                 new StandardFaultHandlerFactory(),
                 new ServerSocketFactory.KafkaServerSocketFactory()
         );
@@ -165,7 +165,7 @@ public class CCKafkaRaftServer implements Server {
     private static MetaTuple initializeLogDirs(KafkaConfig config, String logPrefix) {
         Loader loader = new Loader();
         loader.addMetadataLogDir(config.metadataLogDir());
-        loader.addLogDirs(CollectionConverters.asJava(config.logDirs()));
+        loader.addLogDirs(config.logDirs());
 
         // Load the MetaPropertiesEnsemble
         MetaPropertiesEnsemble initialMetaPropsEnsemble;
@@ -181,7 +181,8 @@ public class CCKafkaRaftServer implements Server {
         );
         initialMetaPropsEnsemble.logDirProps().keySet().forEach(logDir -> {
             if (!logDir.equals(config.metadataLogDir())) {
-                File clusterMetadataTopic = new File(logDir, UnifiedLog.logDirName(Topic.CLUSTER_METADATA_TOPIC_PARTITION));
+                TopicPartition tp = Topic.CLUSTER_METADATA_TOPIC_PARTITION;
+                File clusterMetadataTopic = new File(logDir, tp.topic() + "-" + tp.partition());
                 if (clusterMetadataTopic.exists()) {
                     throw new KafkaException("Unexpected metadata directory (" + config.metadataLogDir() + ") found for " + clusterMetadataTopic);
                 }
@@ -222,7 +223,7 @@ public class CCKafkaRaftServer implements Server {
 
     private void initializeMetaData(KafkaConfig config) {
         Set<File> allLogDirs = new HashSet<>(readLogDirs(config));
-        allLogDirs.add(new File(config.getString(KRaftConfigs.METADATA_LOG_DIR_CONFIG)));
+        allLogDirs.add(new File(config.getString(METADATA_LOG_DIR_CONFIG)));
         for (File logDir : allLogDirs) {
             File metaPropsFile = new File(logDir, "meta.properties");
             if (!metaPropsFile.exists()) {
@@ -239,8 +240,9 @@ public class CCKafkaRaftServer implements Server {
             properties.setProperty(VERSION_CONFIG, MetaPropertiesVersion.V1.numberString());
             properties.setProperty(CLUSTER_ID_CONFIG, _clusterId);
             properties.setProperty(KRaftConfigs.NODE_ID_CONFIG, config.get(KRaftConfigs.NODE_ID_CONFIG).toString());
-            properties.setProperty(ServerLogConfigs.LOG_DIR_CONFIG, config.getString(ServerLogConfigs.LOG_DIR_CONFIG));
-            properties.setProperty(KRaftConfigs.METADATA_LOG_DIR_CONFIG, config.getString(KRaftConfigs.METADATA_LOG_DIR_CONFIG));
+            // Kafka 4.3 changed log.dir(s) to a LIST config; join it back to the comma-separated form meta.properties expects.
+            properties.setProperty(ServerLogConfigs.LOG_DIR_CONFIG, String.join(",", config.getList(ServerLogConfigs.LOG_DIR_CONFIG)));
+            properties.setProperty(METADATA_LOG_DIR_CONFIG, config.getString(METADATA_LOG_DIR_CONFIG));
 
             try (FileOutputStream out = new FileOutputStream(metaPropsFile)) {
                 properties.store(out, "Meta Properties");
@@ -252,10 +254,8 @@ public class CCKafkaRaftServer implements Server {
 
     private Set<File> readLogDirs(KafkaConfig config) {
         Set<File> logDirs = new HashSet<>();
-        String logDirString = config.getString(ServerLogConfigs.LOG_DIR_CONFIG);
-        String[] paths = logDirString.split(",");
-        for (String path : paths) {
-            logDirs.add(new File(path));
+        for (String path : config.getList(ServerLogConfigs.LOG_DIR_CONFIG)) {
+            logDirs.add(new File(path.trim()));
         }
         return logDirs;
     }

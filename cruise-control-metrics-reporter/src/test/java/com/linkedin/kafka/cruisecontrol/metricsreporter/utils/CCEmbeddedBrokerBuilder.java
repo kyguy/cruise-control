@@ -14,13 +14,14 @@ import org.apache.kafka.common.security.auth.SecurityProtocol;
 import org.apache.kafka.coordinator.group.GroupCoordinatorConfig;
 import org.apache.kafka.network.SocketServerConfigs;
 import org.apache.kafka.raft.QuorumConfig;
-import org.apache.kafka.server.config.KRaftConfigs;
+import org.apache.kafka.raft.KRaftConfigs;
 import org.apache.kafka.server.config.ReplicationConfigs;
 import org.apache.kafka.server.config.ServerConfigs;
 import org.apache.kafka.server.config.ServerLogConfigs;
 import org.apache.kafka.storage.internals.log.CleanerConfig;
 
 import static com.linkedin.kafka.cruisecontrol.metricsreporter.utils.CCKafkaRaftServer.CLUSTER_ID_CONFIG;
+import static com.linkedin.kafka.cruisecontrol.metricsreporter.utils.KafkaServerConfigs.METADATA_LOG_DIR_CONFIG;
 
 
 public class CCEmbeddedBrokerBuilder {
@@ -41,7 +42,6 @@ public class CCEmbeddedBrokerBuilder {
   //feature control
   private boolean _enableControlledShutdown;
   private boolean _enableDeleteTopic;
-  private boolean _enableLogCleaner;
   //resource management
   // 2MB
   private long _logCleanerDedupBufferSize = 2097152;
@@ -211,17 +211,6 @@ public class CCEmbeddedBrokerBuilder {
   }
 
   /**
-   * Enable log cleaner.
-   *
-   * @param enableLogCleaner {@code true} to enable log cleaner, {@code false} otherwise.
-   * @return This.
-   */
-  public CCEmbeddedBrokerBuilder enableLogCleaner(boolean enableLogCleaner) {
-    _enableLogCleaner = enableLogCleaner;
-    return this;
-  }
-
-  /**
    * Set log cleaner dedup buffer size.
    * @param logCleanerDedupBufferSize log cleaner dedup buffer size.
    * @return This.
@@ -280,18 +269,20 @@ public class CCEmbeddedBrokerBuilder {
     props.put(KRaftConfigs.PROCESS_ROLES_CONFIG, "broker");
     props.put(KRaftConfigs.NODE_ID_CONFIG, Integer.toString(_nodeId));
     props.put(QuorumConfig.QUORUM_VOTERS_CONFIG, _kraftConnect);
+    if (_kraftConnect != null) {
+      props.put(QuorumConfig.QUORUM_BOOTSTRAP_SERVERS_CONFIG, extractBootstrapServers(_kraftConnect));
+    }
     props.put(CLUSTER_ID_CONFIG, _clusterId);
     props.put(KRaftConfigs.CONTROLLER_LISTENER_NAMES_CONFIG, "CONTROLLER");
     props.put(SocketServerConfigs.LISTENER_SECURITY_PROTOCOL_MAP_CONFIG, "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,SSL:SSL");
     props.put(SocketServerConfigs.LISTENERS_CONFIG, csvJoiner.toString());
     props.put(ServerLogConfigs.LOG_DIR_CONFIG, _logDirectory.getAbsolutePath());
-    props.put(KRaftConfigs.METADATA_LOG_DIR_CONFIG, _metadataLogDirectory.getAbsolutePath());
+    props.put(METADATA_LOG_DIR_CONFIG, _metadataLogDirectory.getAbsolutePath());
     props.put(ReplicationConfigs.REPLICA_SOCKET_TIMEOUT_MS_CONFIG, Long.toString(_socketTimeoutMs));
     props.put(ReplicationConfigs.CONTROLLER_SOCKET_TIMEOUT_MS_CONFIG, Long.toString(_socketTimeoutMs));
     props.put(ServerConfigs.CONTROLLED_SHUTDOWN_ENABLE_CONFIG, Boolean.toString(_enableControlledShutdown));
     props.put(ServerConfigs.DELETE_TOPIC_ENABLE_CONFIG, Boolean.toString(_enableDeleteTopic));
     props.put(CleanerConfig.LOG_CLEANER_DEDUPE_BUFFER_SIZE_PROP, Long.toString(_logCleanerDedupBufferSize));
-    props.put(CleanerConfig.LOG_CLEANER_ENABLE_PROP, Boolean.toString(_enableLogCleaner));
     props.put(GroupCoordinatorConfig.OFFSETS_TOPIC_REPLICATION_FACTOR_CONFIG, "1");
     props.put(SslConfigs.SSL_ENDPOINT_IDENTIFICATION_ALGORITHM_CONFIG, "");
     if (_rack != null) {
@@ -309,6 +300,10 @@ public class CCEmbeddedBrokerBuilder {
     }
 
     return props;
+  }
+
+  private static String extractBootstrapServers(String quorumVoters) {
+    return quorumVoters.replaceAll("\\d+@", "");
   }
 
   public CCEmbeddedBroker build() {
