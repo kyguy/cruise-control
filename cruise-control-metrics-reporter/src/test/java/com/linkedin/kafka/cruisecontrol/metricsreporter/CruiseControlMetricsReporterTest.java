@@ -206,7 +206,9 @@ public class CruiseControlMetricsReporterTest extends CCKafkaClientsIntegrationT
 
   @Test
   public void testUpdatingMetricsTopicConfig() {
-    TopicDescription topicDescription = _cluster.waitForTopicMetadata(TOPIC, Duration.ofSeconds(30), td -> true);
+    Map<String, TopicDescription> topicDescriptions =
+      _cluster.waitForTopicMetadata(List.of(TOPIC), Duration.ofSeconds(5), Duration.ofSeconds(30), td -> true);
+    TopicDescription topicDescription = topicDescriptions.get(TOPIC);
     assertEquals(1, topicDescription.partitions().size());
 
     KafkaContainer broker = _cluster.getBrokers().get(0);
@@ -227,9 +229,9 @@ public class CruiseControlMetricsReporterTest extends CCKafkaClientsIntegrationT
 
     // Wait for topic metadata configuration change to propagate
     int oldPartitionCount = topicDescription.partitions().size();
-    TopicDescription newTopicDescription = _cluster.waitForTopicMetadata(TOPIC, Duration.ofSeconds(30),
-      td -> td.partitions().size() != oldPartitionCount);
-
+    Map<String, TopicDescription> newTopicDescriptions = _cluster.waitForTopicMetadata(
+      List.of(TOPIC), Duration.ofSeconds(5), Duration.ofSeconds(30), td -> td.partitions().size() != oldPartitionCount);
+    TopicDescription newTopicDescription = newTopicDescriptions.get(TOPIC);
     assertEquals(2, newTopicDescription.partitions().size());
   }
 

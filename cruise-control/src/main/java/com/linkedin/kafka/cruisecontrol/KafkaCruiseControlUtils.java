@@ -17,6 +17,7 @@ import com.linkedin.kafka.cruisecontrol.metricsreporter.CruiseControlMetricsUtil
 import com.linkedin.kafka.cruisecontrol.metricsreporter.config.EnvConfigProvider;
 import com.linkedin.kafka.cruisecontrol.monitor.ModelCompletenessRequirements;
 import com.linkedin.kafka.cruisecontrol.monitor.task.LoadMonitorTaskRunner;
+import org.apache.kafka.clients.admin.Admin;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.AlterConfigOp;
@@ -515,7 +516,7 @@ public final class KafkaCruiseControlUtils {
    *
    * @param adminClient AdminClient to be closed.
    */
-  public static void closeAdminClientWithTimeout(AdminClient adminClient) {
+  public static void closeAdminClientWithTimeout(Admin adminClient) {
     closeAdminClientWithTimeout(adminClient, ADMIN_CLIENT_CLOSE_TIMEOUT_MS);
   }
 
@@ -525,7 +526,7 @@ public final class KafkaCruiseControlUtils {
    * @param adminClient AdminClient to be closed.
    * @param timeoutMs the timeout.
    */
-  public static void closeAdminClientWithTimeout(AdminClient adminClient, long timeoutMs) {
+  public static void closeAdminClientWithTimeout(Admin adminClient, long timeoutMs) {
     closeClientWithTimeout(() -> {
       try {
         ((AutoCloseable) adminClient).close();
