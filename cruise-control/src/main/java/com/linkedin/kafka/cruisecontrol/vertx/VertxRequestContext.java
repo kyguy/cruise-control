@@ -53,7 +53,12 @@ public class VertxRequestContext implements CruiseControlRequestContext {
 
     @Override
     public String getPathInfo() {
-        return _context.request().uri().split("\\?")[0];
+        String path = _context.request().path();
+        String basePath = _context.mountPoint();
+        if (basePath != null && path.startsWith(basePath)) {
+            path = path.substring(basePath.length());
+        }
+        return path.isEmpty() ? null : path;
     }
 
     @Override

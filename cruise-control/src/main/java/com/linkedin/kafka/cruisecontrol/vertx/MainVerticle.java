@@ -135,7 +135,7 @@ public class MainVerticle extends AbstractVerticle {
             .config()
             .getString(WebServerConfig.WEBSERVER_API_URLPREFIX_CONFIG)
             .trim()
-            .replace("/*", "/");
+            .replace("/*", "");
     root.mountSubRouter(rootPath, router);
 
     return root;

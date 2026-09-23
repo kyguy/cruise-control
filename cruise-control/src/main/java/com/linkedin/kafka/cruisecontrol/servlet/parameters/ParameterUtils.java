@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -189,9 +188,12 @@ public final class ParameterUtils {
       return null;
     }
     // Skip the first character '/'
-    Path path = Path.of(pathInfo).getFileName();
+    String endpointName = pathInfo.substring(1);
+    if (endpointName.contains("/")) {
+      return null;
+    }
     for (CruiseControlEndPoint endPoint : supportedEndpoints) {
-      if (endPoint.toString().equalsIgnoreCase(String.valueOf(path))) {
+      if (endPoint.toString().equalsIgnoreCase(endpointName)) {
         return endPoint;
       }
     }
