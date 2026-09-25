@@ -234,4 +234,15 @@ public class ParameterUtilsTest {
     Assert.assertNull(ParameterUtils.endPoint(mockRequest));
     EasyMock.verify(mockRequest);
   }
+
+  @Test
+  public void testEndPointTrailingSlash() {
+    CruiseControlRequestContext mockRequest = EasyMock.mock(CruiseControlRequestContext.class);
+    EasyMock.expect(mockRequest.getMethod()).andReturn("GET");
+    EasyMock.expect(mockRequest.getPathInfo()).andReturn("/state/");
+    EasyMock.replay(mockRequest);
+
+    Assert.assertEquals(CruiseControlEndPoint.STATE, ParameterUtils.endPoint(mockRequest));
+    EasyMock.verify(mockRequest);
+  }
 }

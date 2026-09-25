@@ -183,13 +183,16 @@ public final class ParameterUtils {
         throw new UserRequestException("Unsupported request method: " + requestContext.getMethod() + ".");
     }
     String pathInfo = requestContext.getPathInfo();
-    if (pathInfo == null) {
+    if (pathInfo == null || !pathInfo.startsWith("/")) {
       // URL does not have any extra path information
       return null;
     }
     // Skip the first character '/'
     String endpointName = pathInfo.substring(1);
-    if (endpointName.contains("/")) {
+    if (endpointName.endsWith("/")) {
+      endpointName = endpointName.substring(0, endpointName.length() - 1);
+    }
+    if (endpointName.isEmpty() || endpointName.contains("/")) {
       return null;
     }
     for (CruiseControlEndPoint endPoint : supportedEndpoints) {

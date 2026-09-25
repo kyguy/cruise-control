@@ -57,6 +57,9 @@ public class VertxRequestContext implements CruiseControlRequestContext {
         String basePath = _context.mountPoint();
         if (basePath != null && path.startsWith(basePath)) {
             path = path.substring(basePath.length());
+            if (!path.isEmpty() && !path.startsWith("/")) {
+                path = "/" + path;
+            }
         }
         return path.isEmpty() ? null : path;
     }
