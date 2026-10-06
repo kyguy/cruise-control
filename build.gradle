@@ -189,6 +189,7 @@ subprojects {
     def signingKeyId = findProperty("signingKeyId")
     def signingKey = findProperty("signingKey")
     def signingPassword = findProperty("signingPassword")
+    println "Signing config for ${project.name} - keyId set: ${signingKeyId != null}, key set: ${signingKey != null}, password set: ${signingPassword != null}"
     useInMemoryPgpKeys(signingKeyId, signingKey, signingPassword)
     sign publishing.publications
   }
