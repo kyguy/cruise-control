@@ -7,11 +7,7 @@ This document describes the process for releasing Cruise Control artifacts and p
 ### 1. Create a release branch
 
 ```bash
-# Release candidate
-git checkout -b release-<x.y.z>-rc1 main
-
-# GA release
-git checkout -b release-<x.y.z> main
+git checkout -b release-<major.minor>.x main
 ```
 
 ### 2. Build and verify
@@ -25,9 +21,9 @@ Ensure all tests pass before proceeding.
 ### 3. Push the release branch and tag
 
 ```bash
-git push origin release-<x.y.z>
-git tag <version>
-git push origin <version>
+  git push <upstream-remote> release-<major.minor>.x
+  git tag <version>
+  git push <upstream-remote> <version>
 ```
 
 ### 4. Publish to Maven Central
@@ -38,7 +34,7 @@ git push origin <version>
 2. Click **Run workflow** and enter the git tag (e.g., `3.1.0-rc1`).
 3. The workflow checks out the tag, builds, and publishes to a Sonatype staging repository.
 
-#### Locally
+#### Locally (for debugging)
 
 Set the required environment variables:
 ```bash
@@ -59,6 +55,7 @@ Then publish:
 Both release candidates and GA releases are published to Maven Central.
 
 1. Log in to [central.sonatype.com](https://central.sonatype.com/).
+(This requires a Sonatype account with access to the `io.cruise-control` namespace).
 2. Navigate to **Deployments** and find the staging repository.
 3. Verify the artifacts are correct.
 4. Click **Publish** to release to Maven Central.
@@ -79,7 +76,7 @@ For RCs, mark the release as a **pre-release** in GitHub.
 
 ## Published Artifacts
 
-The following artifacts are published under the `io.cruise-control` group:
+The following artifacts are published under the `io.cruise-control` group in Maven Central:
 
 | Artifact                           | Description                     |
 |------------------------------------|---------------------------------|
