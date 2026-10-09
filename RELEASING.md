@@ -21,9 +21,9 @@ Ensure all tests pass before proceeding.
 ### 3. Push the release branch and tag
 
 ```bash
-  git push <upstream-remote> release-<Major>.<Minor>.x
-  git tag <version>
-  git push <upstream-remote> <version>
+git push <upstream-remote> release-<Major>.<Minor>.x
+git tag <version>
+git push <upstream-remote> <version>
 ```
 
 ### 4. Publish to Maven Central
