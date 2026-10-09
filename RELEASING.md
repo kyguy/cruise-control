@@ -7,7 +7,7 @@ This document describes the process for releasing Cruise Control artifacts and p
 ### 1. Create a release branch
 
 ```bash
-git checkout -b release-<major.minor>.x main
+git checkout -b release-<Major>.<Minor>.x main
 ```
 
 ### 2. Build and verify
@@ -21,7 +21,7 @@ Ensure all tests pass before proceeding.
 ### 3. Push the release branch and tag
 
 ```bash
-  git push <upstream-remote> release-<major.minor>.x
+  git push <upstream-remote> release-<Major>.<Minor>.x
   git tag <version>
   git push <upstream-remote> <version>
 ```
