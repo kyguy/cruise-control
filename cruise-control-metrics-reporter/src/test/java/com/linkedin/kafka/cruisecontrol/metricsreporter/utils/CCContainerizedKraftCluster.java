@@ -98,7 +98,7 @@ public class CCContainerizedKraftCluster implements Startable {
   private final List<KafkaContainer> _brokers;
   private final String _clusterId;
   private final String _controllerQuorumVoters;
-  private final String _bootstrapServers;
+  private String _bootstrapServers;
   private final List<String> _brokerAddressList;
   private final Admin _adminClient;
 
@@ -110,7 +110,7 @@ public class CCContainerizedKraftCluster implements Startable {
     this._clusterId = Uuid.randomUuid().toString();
     this._controllerQuorumVoters = getControllerQuorumVoters(numOfBrokers);
     List<Integer> containerHostPorts = getContainerHostPorts(numOfBrokers);
-    this._brokerAddressList = generateServerAddressList(numOfBrokers, containerHostPorts);
+    this._brokerAddressList = new ArrayList<>(generateServerAddressList(numOfBrokers, containerHostPorts));
     this._bootstrapServers = String.join(",", _brokerAddressList);
 
     /*
@@ -228,9 +228,14 @@ public class CCContainerizedKraftCluster implements Startable {
    * @param brokerConfig the broker configuration properties
    */
   public void addBroker(int brokerId, Map<Object, Object> brokerConfig) {
-    KafkaContainer broker = createBrokerContainer(brokerId, brokerConfig, "broker", CCKafkaTestUtils.findLocalPort());
+    int hostPort = CCKafkaTestUtils.findLocalPort();
+    KafkaContainer broker = createBrokerContainer(brokerId, brokerConfig, "broker", hostPort);
+    String brokerAddress = String.format("%s:%s", CONTAINER_HOST, hostPort);
     broker.start();
+
     _brokers.add(broker);
+    _brokerAddressList.add(brokerAddress);
+    _bootstrapServers = String.join(",", _brokerAddressList);
   }
 
   /**
